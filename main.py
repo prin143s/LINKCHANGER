@@ -1,3 +1,6 @@
+# ✅ Fully Working Telegram + Flask PW Redirect Bot (Railway Compatible)
+# 🔄 Works on Python 3.12 and PTB 20+
+
 import asyncio
 from flask import Flask, request, redirect
 from telegram import Update
@@ -7,6 +10,7 @@ from telegram.ext import (
 )
 import urllib.parse
 import threading
+import os
 
 BOT_TOKEN = "8067349631:AAEypPktMhYoL3aMH90u0d33R_U8tbU7WTg"
 RAILWAY_BASE = "https://talented-stillness.up.railway.app/live"
@@ -37,20 +41,18 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     final = f"{RAILWAY_BASE}?q={encoded}&n=PW"
     await update.message.reply_text(f"✅ 1DM Link:\n{final}")
 
-# Launch bot inside asyncio task
-def run_bot():
-    async def main():
-        bot = ApplicationBuilder().token(BOT_TOKEN).build()
-        bot.add_handler(CommandHandler("start", start))
-        bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
-        await bot.initialize()
-        await bot.start()
-        await bot.updater.start_polling()
-        await bot.updater.idle()
-    asyncio.create_task(main())
+# Launch bot inside a dedicated asyncio thread
+async def run_bot():
+    bot = ApplicationBuilder().token(BOT_TOKEN).build()
+    bot.add_handler(CommandHandler("start", start))
+    bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
+    await bot.initialize()
+    await bot.start()
+    print("✅ Telegram bot is running!")
+    await bot.updater.start_polling()
+    await bot.updater.idle()
 
-# Flask entrypoint
+# Start everything
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.create_task(run_bot())
+    threading.Thread(target=lambda: asyncio.run(run_bot()), daemon=True).start()
     app.run(host="0.0.0.0", port=8080)
