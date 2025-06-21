@@ -1,15 +1,15 @@
 import asyncio
-import threading
 from flask import Flask, request, redirect
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
-    filters, ContextTypes
+    ContextTypes, filters
 )
 import urllib.parse
+import threading
 
 BOT_TOKEN = "8067349631:AAEypPktMhYoL3aMH90u0d33R_U8tbU7WTg"
-RAILWAY_BASE = "https://talented-stillness.up.railway.app/live"  # ✅ use your actual domain
+RAILWAY_BASE = "https://talented-stillness.up.railway.app/live"
 
 app = Flask(__name__)
 
@@ -24,32 +24,33 @@ def redirector():
         return "❌ Missing 'q' parameter", 400
     return redirect(raw_url, code=302)
 
+# Telegram bot handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Send PW .mp4 link, I'll convert for 1DM.")
+    await update.message.reply_text("👋 Send any PW video link and I’ll return a 1DM link.")
 
-async def handle_pw_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    raw_link = update.message.text.strip()
-    if not raw_link.startswith("http"):
-        await update.message.reply_text("❌ Invalid link.")
+async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    raw = update.message.text.strip()
+    if not raw.startswith("http"):
+        await update.message.reply_text("❌ Invalid URL.")
         return
+    encoded = urllib.parse.quote(raw, safe="")
+    final = f"{RAILWAY_BASE}?q={encoded}&n=PW"
+    await update.message.reply_text(f"✅ 1DM Link:\n{final}")
 
-    try:
-        encoded = urllib.parse.quote(raw_link, safe="")
-        final_link = f"{RAILWAY_BASE}?q={encoded}&n=PW-Lecture"
-        await update.message.reply_text(f"✅ 1DM Link:\n{final_link}")
-    except Exception as e:
-        await update.message.reply_text("❌ Failed.")
-        print("Error:", e)
-
-def start_telegram():
-    async def run():
+# Launch bot inside asyncio task
+def run_bot():
+    async def main():
         bot = ApplicationBuilder().token(BOT_TOKEN).build()
         bot.add_handler(CommandHandler("start", start))
-        bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_pw_link))
-        await bot.run_polling()
+        bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
+        await bot.initialize()
+        await bot.start()
+        await bot.updater.start_polling()
+        await bot.updater.idle()
+    asyncio.create_task(main())
 
-    asyncio.run(run())
-
+# Flask entrypoint
 if __name__ == "__main__":
-    threading.Thread(target=start_telegram).start()
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_bot())
     app.run(host="0.0.0.0", port=8080)
