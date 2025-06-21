@@ -7,8 +7,9 @@ from telegram.ext import (
 )
 import urllib.parse, threading, os
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-API_BASE = os.getenv("API_BASE")  # Railway redirect URL
+BOT_TOKEN = "8067349631:AAEypPktMhYoL3aMH90u0d33R_U8tbU7WTg"
+API_BASE = "https://web-production-ccaed.up.railway.app/live"
+# Railway redirect URL
 
 app = Flask(__name__)
 
